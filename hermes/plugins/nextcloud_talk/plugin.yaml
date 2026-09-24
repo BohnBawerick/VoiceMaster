@@ -1,0 +1,54 @@
+name: nextcloud-talk-platform
+label: Nextcloud Talk
+kind: platform
+version: 1.0.0
+description: >
+  Nextcloud Talk gateway adapter for Hermes Agent. Connects to a Nextcloud
+  instance and relays messages between Talk conversations and the Hermes agent,
+  acting as a dedicated Nextcloud user via an app-password (OUTBOUND long-poll
+  only - no inbound webhook, so no tunnel/firewall rule). Every inbound message
+  carries an authoritative OWNER/GUEST tag so the agent can gate actions behind
+  owner approval.
+author: PP
+requires_env:
+  - name: NEXTCLOUD_BASE_URL
+    description: "Nextcloud origin, e.g. https://nc.example.com"
+    prompt: "Nextcloud base URL"
+    password: false
+  - name: NEXTCLOUD_TALK_USER
+    description: "Nextcloud username the bot acts as (e.g. ai-agent)"
+    prompt: "Talk user"
+    password: false
+  - name: NEXTCLOUD_TALK_APP_PASSWORD
+    description: "App-password for the Talk user (Settings -> Security -> Devices & sessions)"
+    prompt: "App-password"
+    password: true
+optional_env:
+  - name: NEXTCLOUD_TALK_OWNER_USERS
+    description: "Comma-separated Nextcloud usernames treated as OWNER (full trust)"
+    prompt: "Owner usernames"
+    password: false
+  - name: NEXTCLOUD_TALK_HOME_CONVERSATION
+    description: "Room token for cron/proactive delivery + owner approval DM"
+    prompt: "Home conversation token"
+    password: false
+  - name: NEXTCLOUD_TALK_ALLOW_ALL_USERS
+    description: "Admit any authenticated Nextcloud user (room membership still gates rooms)"
+    prompt: "Allow all users? (true/false)"
+    password: false
+  - name: NEXTCLOUD_TALK_ALLOWED_USERS
+    description: "Comma-separated usernames allowed (used only when ALLOW_ALL is false)"
+    prompt: "Allowed usernames"
+    password: false
+  - name: TALK_TRIGGER_MODE
+    description: "smart | all | mention | oneToOneOnly (default: smart)"
+    prompt: "Trigger mode"
+    password: false
+  - name: TALK_ROOM_ALLOWLIST
+    description: "Comma-separated room tokens to restrict to (empty = all joined rooms)"
+    prompt: "Room allowlist"
+    password: false
+  - name: TALK_VOICE_SIDECAR_URL
+    description: "Base URL of the VoiceMaster Talk voice bridge (enables Talk voice-call coordination). Unset = text-only."
+    prompt: "Voice sidecar URL (e.g. http://localhost:3338), or blank to disable"
+    password: false

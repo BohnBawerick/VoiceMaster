@@ -1,0 +1,4 @@
+# Test-only dependencies (python -m pytest); runtime deps live in requirements.txt
+pytest
+pytest-asyncio
+respx

@@ -1,0 +1,85 @@
+# VoiceMaster: the phone bridge and the dashboard, with the Nextcloud Talk bridge as an
+# optional extra. Quick start in README.md; every setting is in .env.example.
+#
+#   cp .env.example .env              # fill in the REQUIRED values
+#   mkdir -p data/voice-config data/events data/recordings data/talk-state
+#   chmod 0777 data/events data/recordings data/talk-state   # the Talk image runs as a non-root user
+#   docker compose up -d --build      # phone + dashboard
+#   docker compose --profile talk up -d --build             # also the Talk Outlet
+#
+# Networking: every service uses the host network. Hermes's per-profile gateways listen on
+# 127.0.0.1 only, and the supervisor in hermes/ publishes them as 127.0.0.1 URLs, so the
+# bridges must share the host's loopback to reach them. Ports on the host:
+#   3336  phone bridge   (put your HTTPS tunnel in front of it; Twilio calls /voice/webhook)
+#   3737  dashboard      (login is on when VOICE_DASHBOARD_USER and _PASSWORD are set)
+#   3338  Talk bridge    (profile `talk` only)
+#
+# Shared state lives in ./data:
+#   voice-config/  Agents, Outlet assignments, Schedules, gateways/gateways.json. The
+#                  dashboard writes it; the bridges read it. Point the Hermes profile
+#                  supervisor's HERMES_GATEWAY_REGISTRY at data/voice-config/gateways/gateways.json.
+#   events/        the event log, last-known-good snapshots, and the SQLite call archive.
+#   recordings/    one stereo Opus file per call.
+
+x-voicemaster: &voicemaster
+  env_file: .env
+  network_mode: host
+  restart: unless-stopped
+
+services:
+  voice:
+    <<: *voicemaster
+    build:
+      context: ./services
+      dockerfile: voice/Dockerfile
+    environment:
+      PORT: "3336"
+      VOICE_CONFIG_DIR: /app/voice-config
+      VOICE_EVENTLOG_PATH: /app/events/voice_events.jsonl
+    volumes:
+      - ./data/voice-config:/app/voice-config:ro
+      - ./data/events:/app/events
+      - ./data/recordings:/app/recordings
+      # Optional: the persona text inbound calls start from.
+      # - ${HERMES_HOME:-~/.hermes}/SOUL.md:/app/config/SOUL.md:ro
+    # A slow outbound dial can take 30 s; do not SIGKILL it mid-dial.
+    stop_grace_period: 45s
+
+  voice-control:
+    <<: *voicemaster
+    build:
+      context: ./services
+      dockerfile: voice-control/Dockerfile.nas
+    environment:
+      VOICE_CONFIG_DIR: /app/voice-config
+      VOICE_EVENTLOG_PATH: /app/events/voice_events.jsonl
+      VOICE_MODE_C_URL: http://127.0.0.1:3336
+      # Creating an Agent creates a Hermes profile here. Only the profiles directory is
+      # mounted: the whole Hermes home would hand the dashboard every profile's .env.
+      HERMES_PROFILES_DIR: /hermes-profiles
+    volumes:
+      - ./data/voice-config:/app/voice-config
+      - ./data/events:/app/events
+      - ./data/recordings:/app/recordings:ro
+      - ${HERMES_PROFILES_HOST_DIR:-${HOME}/.hermes/profiles}:/hermes-profiles
+    depends_on:
+      - voice
+    # The scheduler runs here; a restart during a due dial lands in its grace window.
+    stop_grace_period: 45s
+
+  talk-voice:
+    <<: *voicemaster
+    profiles: [talk]
+    build:
+      context: ./services
+      dockerfile: talk-voice-bridge/Dockerfile
+    environment:
+      PORT: "3338"
+      VOICE_CONFIG_DIR: /app/voice-config
+      VOICE_EVENTLOG_PATH: /app/events/voice_events.jsonl
+    volumes:
+      - ./data/voice-config:/app/voice-config:ro
+      - ./data/events:/app/events
+      - ./data/recordings:/app/recordings
+      - ./data/talk-state:/app/state
+    shm_size: 1gb

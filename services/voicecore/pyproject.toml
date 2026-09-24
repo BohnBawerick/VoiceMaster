@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voicecore"
+version = "0.1.0"
+description = "Shared runtime modules for Voice Control"
+requires-python = ">=3.10"
+# audioop left the standard library in Python 3.13.
+dependencies = ['audioop-lts; python_version >= "3.13"']
+
+[tool.setuptools]
+packages = ["voicecore"]
+package-dir = {voicecore = "."}
