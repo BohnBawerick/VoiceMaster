@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-# server.py uses additional_headers= and connection.state (websockets >= 14 API)
+# server.py uses additional_headers= and connection.state (websockets >= 17.1 API)
 websockets>=14
 httpx
 twilio
