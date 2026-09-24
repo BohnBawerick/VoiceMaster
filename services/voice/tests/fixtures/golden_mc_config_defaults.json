@@ -1,0 +1,22 @@
+{
+  "AI_DISCLOSURE": false,
+  "ALLOWED_CALLERS": [],
+  "ALLOWED_OUTBOUND": [],
+  "CONFIG_DIR": "/app/config",
+  "FILLER_DEBOUNCE_S": 1.5,
+  "FILLER_TEXT": "One sec, let me check that.",
+  "HERMES_GATEWAY_TOKEN": "",
+  "HERMES_GATEWAY_URL": "http://hermes:18789",
+  "HINDSIGHT_BANK": "voice",
+  "HINDSIGHT_URL": "",
+  "OPENAI_MODEL": "gpt-realtime",
+  "PORT": 3336,
+  "PUBLIC_HOST": "",
+  "RETAIN_ENABLED": true,
+  "TRANSCRIPTION_MODEL": "gpt-4o-transcribe",
+  "TWILIO_ACCOUNT_SID": "",
+  "TWILIO_AUTH_TOKEN": "",
+  "TWILIO_FROM_NUMBER": "",
+  "TWILIO_SIGNING_TOKENS": [],
+  "VOICE": "cedar"
+}

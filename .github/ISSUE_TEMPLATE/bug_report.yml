@@ -1,0 +1,36 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove secrets, real phone numbers and transcripts from anything you paste.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: dropdown
+    id: outlet
+    attributes:
+      label: Outlet
+      options: [Phone (Twilio), Nextcloud Talk, Dashboard only, Not sure]
+    validations:
+      required: true
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Voice lane of the Agent
+      options: [OpenAI Realtime, Cascade, Direct Hermes lane, Not sure]
+  - type: input
+    id: versions
+    attributes:
+      label: VoiceMaster commit and Hermes Agent version
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The relevant lines from `docker compose logs`, with secrets removed.
+      render: text

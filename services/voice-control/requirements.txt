@@ -1,0 +1,10 @@
+fastapi==0.139.2
+uvicorn==0.51.0
+httpx==0.28.1
+pyyaml==6.0.3
+# uvicorn --env-file needs it, for deployments that load secrets from a mounted env file.
+python-dotenv==1.2.3
+python-multipart==0.0.20
+twilio==9.10.9
+# voicecore imports audioop, which Python 3.13 removed; the images stay on 3.12
+audioop-lts; python_version >= "3.13"

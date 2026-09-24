@@ -1,0 +1,27 @@
+# Full design-§2.3 sample profile used by the s1 suites (c05 schema-accept + c23 full
+# override). c23 requires that against the goldens EXACTLY the model query value, the
+# output voice and the three turn_detection numbers change — so persona is present but
+# EMPTY (a non-empty persona would also change session.instructions) and
+# transcription_model is deliberately absent.
+id: sample-realtime
+description: Full-featured realtime sample agent used by the s1 test suites.
+enabled: true
+hermes_profile: default
+direction: both
+pipeline: realtime
+providers:
+  realtime: openai-gpt-realtime
+knobs:
+  model: gpt-realtime-2026
+  voice: marin
+  vad:
+    silence_ms: 400
+    threshold: 0.6
+    prefix_padding_ms: 200
+persona: ""
+number_policy:
+  allowed: ["+15550001111"]
+guardrails:
+  on_call_tools: true
+memory:
+  retain: false

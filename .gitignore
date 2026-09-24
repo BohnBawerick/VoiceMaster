@@ -1,0 +1,36 @@
+# Secrets and local configuration. .env.example is the committed template.
+.env
+.env.*
+!.env.example
+
+# Runtime state written by docker compose (voice-config, events, recordings, the SQLite archive)
+/data/
+
+*.pyc
+__pycache__/
+.pytest_cache/
+build/
+*.egg-info/
+node_modules/
+.vscode/
+.idea/
+*.tar.gz
+
+# Per-service virtualenvs
+services/*/.venv/
+hermes/.venv/
+
+# Windows / macOS clutter. WSL renders the NTFS ":" stream separator as U+F03A, so match the
+# suffix as well as the literal name.
+*Zone.Identifier
+*:Zone.Identifier
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes

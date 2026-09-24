@@ -1,0 +1,30 @@
+{
+  "AI_DISCLOSURE": true,
+  "ALLOWED_CALLERS": [
+    "+15550001111",
+    "+15550002222"
+  ],
+  "ALLOWED_OUTBOUND": [
+    "+15550003333"
+  ],
+  "CONFIG_DIR": "/tmp/parity-config",
+  "FILLER_DEBOUNCE_S": 2.5,
+  "FILLER_TEXT": "Hold on a moment.",
+  "HERMES_GATEWAY_TOKEN": "fake-gw-tok",
+  "HERMES_GATEWAY_URL": "http://gateway.parity.test:1234",
+  "HINDSIGHT_BANK": "parity-bank",
+  "HINDSIGHT_URL": "http://hindsight.parity.test:9999",
+  "OPENAI_MODEL": "gpt-realtime-parity",
+  "PORT": 4444,
+  "PUBLIC_HOST": "parity.test",
+  "RETAIN_ENABLED": false,
+  "TRANSCRIPTION_MODEL": "whisper-1",
+  "TWILIO_ACCOUNT_SID": "ACfake000",
+  "TWILIO_AUTH_TOKEN": "fake-twilio-auth",
+  "TWILIO_FROM_NUMBER": "+15550009999",
+  "TWILIO_SIGNING_TOKENS": [
+    "fake-sign-a",
+    "fake-sign-b"
+  ],
+  "VOICE": "echo"
+}

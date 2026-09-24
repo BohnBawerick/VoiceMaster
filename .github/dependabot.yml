@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: monthly}
+  - package-ecosystem: npm
+    directory: /services/voice-control/ui
+    schedule: {interval: monthly}
+  - package-ecosystem: pip
+    directories: [/services/voice, /services/talk-voice-bridge, /services/voice-control]
+    schedule: {interval: monthly}

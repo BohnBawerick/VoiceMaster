@@ -1,0 +1,246 @@
+# Voice Control Plane — canonical provider registry (s1).
+#
+# SINGLE source of truth for every provider both voice bridges may reference.
+# Both services resolve their registry to THIS file (services/voice-config/providers.yaml)
+# unless VOICE_CONFIG_DIR points at a runtime config dir carrying its own providers.yaml.
+#
+# Schema per entry (validated by profiles.load_registry in both services):
+#   id            unique slug (registry key referenced by agents/*.yaml `providers:`)
+#   role          one of: realtime | llm | stt | tts
+#   display_name  human label for the s2 dashboard
+#   secret_env    env var NAME holding the credential — NAMES ONLY, never values
+#   capabilities  list of capability flags (dashboard gating hints, inert in s1)
+#   default_knobs map of knob fill-ins. Applied ONLY when a profile is selected AND the
+#                 knob is absent from both the profile and the environment (precedence:
+#                 profile > env > default_knobs > coded default). With no profile
+#                 selected the registry NEVER participates — which is also why the
+#                 realtime entries keep this empty: each bridge's coded defaults
+#                 (deliberately divergent) stay authoritative.
+#   cost_hint / latency_hint   optional free-text strings for the dashboard.
+
+providers:
+  # -- realtime (speech-to-speech) -------------------------------------------
+  - id: openai-gpt-realtime
+    role: realtime
+    display_name: OpenAI GPT Realtime
+    secret_env: OPENAI_API_KEY
+    capabilities: [speech-to-speech, tools, input-transcription, server-vad, barge-in]
+    default_knobs: {}
+    cost_hint: "~$0.30/min blended audio in+out"
+    latency_hint: "sub-second first audio; VAD window dominates"
+
+  - id: google-gemini-live
+    role: realtime
+    display_name: Google Gemini Live
+    secret_env: GOOGLE_API_KEY
+    capabilities: [speech-to-speech, tools, server-vad]
+    default_knobs: {}
+    cost_hint: "cheaper than OpenAI realtime at list price"
+    latency_hint: "comparable to OpenAI realtime (unverified here — not wired in s1)"
+
+  # -- llm (cascade brain — parsed but NOT executable in s1) -----------------
+  - id: nvidia-nemotron
+    role: llm
+    display_name: NVIDIA Nemotron (NIM)
+    secret_env: NVIDIA_API_KEY
+    capabilities: [chat, tools, json-mode]
+    # model pinned to the account-accessible hosted id (s4 cascade lane). The public
+    # /v1/models list is broader than this account's grants — llama-3.1-nemotron-70b
+    # 404s for us; nemotron-3-super-120b-a12b is proven working (200 + clean content).
+    default_knobs: {model: nvidia/nemotron-3-super-120b-a12b, temperature: 0.7}
+    cost_hint: "free tier via NIM"
+    latency_hint: "~2-4 s per short turn"
+
+  - id: openrouter
+    role: llm
+    display_name: OpenRouter (gateway)
+    secret_env: OPENROUTER_API_KEY
+    capabilities: [chat, tools, json-mode]
+    default_knobs: {model: openai/gpt-4o-mini, temperature: 0.7}
+    cost_hint: "per-model pass-through pricing"
+    latency_hint: "model-dependent"
+
+  - id: grok
+    role: llm
+    display_name: xAI Grok
+    secret_env: XAI_API_KEY
+    capabilities: [chat, tools]
+    # No XAI_API_KEY held (2026-07-19) — model id is the current fast non-reasoning
+    # tier per xAI docs; unverifiable keyless, fails honestly at the llm stage.
+    default_knobs: {model: grok-4-fast-non-reasoning, temperature: 0.7}
+    cost_hint: "mid-tier per token"
+    latency_hint: "fast short turns"
+
+  - id: gpt-4.1
+    role: llm
+    display_name: OpenAI GPT-4.1
+    secret_env: OPENAI_API_KEY
+    capabilities: [chat, tools, json-mode]
+    default_knobs: {model: gpt-4.1, temperature: 0.7}
+    cost_hint: "premium per token"
+    latency_hint: "fast short turns"
+
+  - id: gemini-2.5-flash
+    role: llm
+    display_name: Google Gemini Flash
+    secret_env: GOOGLE_API_KEY
+    capabilities: [chat, tools, json-mode]
+    # gemini-2.5-flash is closed to new users on this key (404, live-verified
+    # 2026-07-19); gemini-flash-latest resolves + answers on the OpenAI-compat
+    # endpoint. Registry id frozen (profiles reference it), model updated.
+    default_knobs: {model: gemini-flash-latest, temperature: 0.7}
+    cost_hint: "cheap per token"
+    latency_hint: "very fast short turns"
+
+  - id: claude-haiku-4.5
+    role: llm
+    display_name: Anthropic Claude Haiku 4.5
+    secret_env: ANTHROPIC_API_KEY
+    capabilities: [chat, tools]
+    default_knobs: {temperature: 0.7}
+    cost_hint: "cheap per token"
+    latency_hint: "fast short turns"
+
+  - id: glm
+    role: llm
+    display_name: Zhipu GLM
+    secret_env: ZHIPU_API_KEY
+    capabilities: [chat, tools]
+    # No ZHIPU_API_KEY held (2026-07-19) — fails honestly at the llm stage.
+    default_knobs: {model: glm-4.6, temperature: 0.7}
+    cost_hint: "very cheap per token"
+    latency_hint: "region-dependent"
+
+  - id: opencodego
+    role: llm
+    display_name: OpenCode Zen (Go)
+    secret_env: OPENCODE_GO_API_KEY
+    # NO json-mode: Zen's response_format is decorative — ~35% non-compliant (measured
+    # 2026-07-15), so it must never be trusted for constrained decoding. chat + tools only.
+    capabilities: [chat, tools]
+    # zen/go/v1 catalog (2026-07-15): minimax-m3/m2.7/m2.5, kimi-k2.7-code/k2.6/k2.5,
+    # glm-5.2/5.1/5, deepseek-v4-pro/v4-flash, qwen3.7-max, qwen3.7/3.6/3.5-plus,
+    # mimo-v2-pro/v2-omni/v2.5-pro/v2.5, hy3-preview. Default minimax-m3 (mid-tier,
+    # tool-capable, fast short turns). ⚠️ CF-1010: the host blocks non-browser
+    # User-Agents — the cascade lanes + probe send a browser UA (cascade_config.BROWSER_UA).
+    default_knobs: {model: minimax-m3, temperature: 0.7}
+    cost_hint: "mid-tier per token ($0.30/$1.20 per M)"
+    latency_hint: "fast short turns"
+
+  # VC24: the llm stage that is a Hermes profile itself (the direct lane). There is no
+  # vendor endpoint and no model here: the Agent's own `hermes_profile` picks the gateway
+  # (HERMES_PROFILE_GATEWAY_URLS, then HERMES_GATEWAY_URL for `default`, then the
+  # supervisor's gateways/gateways.json), and the profile's own config picks the model.
+  # `knobs.model`, when set, is sent as the request's `model` and selects a Hermes
+  # `model_routes` alias, which is how a call gets a faster model than Telegram does.
+  # secret_env is the gateway bearer - the same token every other Hermes seam uses.
+  - id: hermes-agent
+    role: llm
+    display_name: Hermes (the Agent's own profile)
+    secret_env: HERMES_GATEWAY_TOKEN
+    capabilities: [chat, tools, streaming, memory]
+    default_knobs: {}
+    cost_hint: "whatever the profile's own model chain costs"
+    latency_hint: "one full agent turn; tools can take tens of seconds"
+
+  # -- stt (cascade ears — parsed but NOT executable in s1) ------------------
+  # ElevenLabs Scribe realtime: the direct lane's default ears (ticket 21), so the lane
+  # is ElevenLabs in, Hermes as the brain, ElevenLabs out. Takes Twilio's μ-law/8k and
+  # Talk's PCM/24k natively, and its transcript marks speech that trailed off ("I
+  # just..."), which is the lane's end-of-turn signal. Same key as ElevenLabs TTS.
+  - id: elevenlabs-scribe
+    role: stt
+    display_name: ElevenLabs Scribe
+    secret_env: ELEVENLABS_API_KEY
+    capabilities: [streaming, multilingual, end-of-turn]
+    default_knobs: {model: scribe_v2_realtime, language: en}
+    cost_hint: "billed per hour of realtime audio on the ElevenLabs plan"
+    latency_hint: "~350-420 ms from end of speech to committed text (measured)"
+
+  # language: en, not multi: `multi` heard "fourteen six" as "Diez dos" on a real call
+  # (2026-09-23).
+  - id: deepgram
+    role: stt
+    display_name: Deepgram Nova
+    secret_env: DEEPGRAM_API_KEY
+    capabilities: [streaming, word-timestamps, multilingual]
+    default_knobs: {model: nova-3, language: en}
+    cost_hint: "~$0.005/min streaming"
+    latency_hint: "~300 ms partials"
+
+  - id: soniox
+    role: stt
+    display_name: Soniox
+    secret_env: SONIOX_API_KEY
+    capabilities: [streaming, multilingual]
+    default_knobs: {language: multi}
+    cost_hint: "low per minute"
+    latency_hint: "low-latency partials"
+
+  - id: assemblyai
+    role: stt
+    display_name: AssemblyAI
+    secret_env: ASSEMBLYAI_API_KEY
+    capabilities: [streaming, word-timestamps]
+    default_knobs: {language: en}
+    cost_hint: "~$0.006/min streaming"
+    latency_hint: "~500 ms partials"
+
+  - id: openai-gpt-4o-transcribe
+    role: stt
+    display_name: OpenAI GPT-4o Transcribe
+    secret_env: OPENAI_API_KEY
+    capabilities: [streaming, accents, proper-nouns]
+    default_knobs: {model: gpt-4o-transcribe}
+    cost_hint: "same $/min as whisper-1"
+    latency_hint: "server-side, sub-second"
+
+  - id: nvidia-stt
+    role: stt
+    display_name: NVIDIA Riva / NIM STT
+    secret_env: NVIDIA_API_KEY
+    capabilities: [streaming]
+    default_knobs: {language: en}
+    cost_hint: "free tier via NIM"
+    latency_hint: "unbenchmarked here"
+
+  # -- tts (cascade mouth — parsed but NOT executable in s1) -----------------
+  - id: elevenlabs
+    role: tts
+    display_name: ElevenLabs
+    secret_env: ELEVENLABS_API_KEY
+    capabilities: [streaming, voice-cloning, multilingual]
+    # voice = Rachel, an always-available premade voice; env ELEVENLABS_VOICE_ID
+    # still wins over this (profile > env > registry).
+    default_knobs: {stability: 0.5, voice: 21m00Tcm4TlvDq8ikWAM}
+    cost_hint: "premium per character"
+    latency_hint: "~300 ms first audio (turbo)"
+
+  - id: cartesia
+    role: tts
+    display_name: Cartesia Sonic
+    secret_env: CARTESIA_API_KEY
+    capabilities: [streaming, low-latency]
+    default_knobs: {speed: 1.0}
+    cost_hint: "mid per character"
+    latency_hint: "~100 ms first audio"
+
+  - id: deepgram-aura
+    role: tts
+    display_name: Deepgram Aura
+    secret_env: DEEPGRAM_API_KEY
+    capabilities: [streaming, low-latency]
+    # Aura voices are model ids; thalia is the flagship Aura-2 en voice
+    # (live-verified 200 on /v1/speak 2026-07-19). No speed control in Aura.
+    default_knobs: {voice: aura-2-thalia-en}
+    cost_hint: "cheap per character"
+    latency_hint: "~200 ms first audio"
+
+  - id: inworld
+    role: tts
+    display_name: Inworld TTS
+    secret_env: INWORLD_API_KEY
+    capabilities: [streaming, character-voices]
+    default_knobs: {speed: 1.0}
+    cost_hint: "unpriced here"
+    latency_hint: "unbenchmarked here"

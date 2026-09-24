@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+# server.py uses additional_headers= and connection.state (websockets >= 14 API)
+websockets>=14
+httpx
+twilio
+python-dotenv
+python-multipart
+pyyaml                # s1 voice profiles: profiles.py loads providers.yaml + agents/*.yaml
+# voicecore imports audioop, which Python 3.13 removed; the images stay on 3.12
+audioop-lts; python_version >= "3.13"

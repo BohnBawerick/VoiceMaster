@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+httpx
+python-dotenv
+websockets>=14        # RealtimeBridge uses additional_headers= (needs >=14) — matches Mode C
+playwright==1.48.*    # MUST match the base image's pre-installed browsers (see Dockerfile.nas)
+pytest
+pytest-asyncio
+respx
+pyyaml                # s1 voice profiles: profiles.py loads providers.yaml + agents/*.yaml
+# voicecore imports audioop, which Python 3.13 removed; the images stay on 3.12
+audioop-lts; python_version >= "3.13"
