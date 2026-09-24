@@ -3,7 +3,7 @@ uvicorn[standard]
 httpx
 python-dotenv
 websockets>=14        # RealtimeBridge uses additional_headers= (needs >=14) — matches Mode C
-playwright==1.48.*    # MUST match the base image's pre-installed browsers (see Dockerfile.nas)
+playwright==1.63.*    # MUST match the base image's pre-installed browsers (see Dockerfile.nas)
 pytest
 pytest-asyncio
 respx
