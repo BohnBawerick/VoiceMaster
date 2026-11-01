@@ -76,7 +76,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Test
         working-directory: services/${{ matrix.service }}
-        run: .venv/bin/python -m pytest tests/ -q
+        run: |
+          if [ "${{ matrix.service }}" = "voice-control" ]; then
+            .venv/bin/python -m pytest tests/ -n 4 -q
+          else
+            .venv/bin/python -m pytest tests/ -q
+          fi
 
   hermes-addons:
     runs-on: ubuntu-latest
