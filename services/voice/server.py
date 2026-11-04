@@ -94,6 +94,14 @@ def gateway_url_for_profile(profile: str) -> "str | None":
     return hermes_gateway.gateway_url_for_profile(profile, default_url=HERMES_GATEWAY_URL)
 
 
+def gateway_token_for_profile(profile: str) -> str:
+    """The bearer for that profile's gateway: its own entry in
+    HERMES_PROFILE_GATEWAY_TOKENS, else the shared HERMES_GATEWAY_TOKEN. Outbound only;
+    the bearer this bridge requires of its own callers stays HERMES_GATEWAY_TOKEN."""
+    return hermes_gateway.gateway_token_for_profile(
+        profile, default_token=HERMES_GATEWAY_TOKEN)
+
+
 # Twilio signature verification.
 # TWILIO_AUTH_TOKEN is the account's primary token — the REST credential (see Client() below).
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
@@ -185,9 +193,10 @@ def _summariser_for(snapshot):
     that Agent's own configuration. An unknown profile resolves to no gateway, which the
     summariser reports as `unavailable` rather than quietly routing to another Agent.
     """
+    name = _profile_of_snapshot(snapshot)
     return call_summary.make_summariser(
-        gateway_url=gateway_url_for_profile(_profile_of_snapshot(snapshot)),
-        token=HERMES_GATEWAY_TOKEN)
+        gateway_url=gateway_url_for_profile(name),
+        token=gateway_token_for_profile(name))
 
 
 def _effective_realtime_config(profile=_UNSET, direction: str = "inbound") -> dict:
@@ -380,8 +389,9 @@ async def call_hermes_agent(instruction: str, profile: str = "default") -> str:
     )
     try:
         headers = {"Content-Type": "application/json"}
-        if HERMES_GATEWAY_TOKEN:
-            headers["Authorization"] = f"Bearer {HERMES_GATEWAY_TOKEN}"
+        token = gateway_token_for_profile(profile)
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
@@ -1382,7 +1392,8 @@ def _build_cascade_session(websocket, stream_sid, config, snapshot, recorder, en
         # VC24: None unless the llm stage is the Agent's own Hermes profile. Raises for
         # an unroutable profile, which the caller turns into a refused call.
         hermes_conversation=cascade_live.hermes_conversation_for(
-            config, call_id=stream_sid or "", token=HERMES_GATEWAY_TOKEN,
+            config, call_id=stream_sid or "",
+            token=gateway_token_for_profile(_profile_of_snapshot(snapshot)),
             mission_brief=brief, caller=caller),
         stt=stt,
         hermes_call=functools.partial(

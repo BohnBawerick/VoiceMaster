@@ -27,8 +27,10 @@ TWILIO_URL = os.environ.get("MODE_C_SIDECAR_URL", "http://localhost:3336")
 
 
 def _token() -> str:
-    # The bridge validates Authorization: Bearer <gateway token>. Inside the gateway process
-    # that value is API_SERVER_KEY; the bridges receive the same value as HERMES_GATEWAY_TOKEN.
+    # The bridge validates Authorization: Bearer <gateway token>, the shared
+    # HERMES_GATEWAY_TOKEN. Inside a gateway that runs on the shared key, API_SERVER_KEY is
+    # that same value. A profile with its own API_SERVER_KEY (HERMES_PROFILE_GATEWAY_TOKENS
+    # on the voice side) must have HERMES_GATEWAY_TOKEN in its environment to place calls.
     return os.environ.get("HERMES_GATEWAY_TOKEN") or os.environ.get("API_SERVER_KEY", "")
 
 

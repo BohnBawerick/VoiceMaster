@@ -306,9 +306,12 @@ class CascadeBridge:
         self._clock = clock
 
         config = build_config(profile, self._env)
+        profile_name = hermes.hermes_profile_name(profile)
+        gateway_token = hermes.gateway_token_for_profile(
+            profile_name, cfg.hermes_gateway_token)
         try:
             conversation = cascade_live.hermes_conversation_for(
-                config, call_id=token, token=cfg.hermes_gateway_token,
+                config, call_id=token, token=gateway_token,
                 mission_brief=brief, caller=caller)
         except ValueError as exc:
             raise CascadeBridgeError(str(exc)) from exc
@@ -339,14 +342,13 @@ class CascadeBridge:
         # VC24: the tool goes to THIS call's hermes_profile, through the one resolver.
         # It used to go to cfg.hermes_gateway_url whatever the Agent was bound to, so a
         # second profile's tool calls landed on the default Agent's backend.
-        profile_name = hermes.hermes_profile_name(profile)
         tool_gateway = hermes.gateway_url_for_profile(profile_name, cfg.hermes_gateway_url)
         if tool_gateway is None:
             hermes_call = functools.partial(_unroutable_tool, profile_name=profile_name)
         else:
             hermes_call = functools.partial(
                 hermes.call_hermes_agent, gateway_url=tool_gateway,
-                token=cfg.hermes_gateway_token,
+                token=gateway_token,
                 timeout=min(cfg.hermes_timeout, cascade_live.TOOL_BUDGET_S))
         # Ticket 07: the Talk Outlet's cascade lane records through the same module as
         # the phone Outlet — only the audio format differs (PCM16/24k off the Pulse
@@ -373,7 +375,7 @@ class CascadeBridge:
             # Ticket 06: the post-call summariser for THIS call's Agent, resolved through
             # the same hermes_profile -> gateway seam the in-call tool uses above.
             summariser=call_summary.make_summariser(
-                gateway_url=tool_gateway, token=cfg.hermes_gateway_token))
+                gateway_url=tool_gateway, token=gateway_token))
 
     @property
     def transcript(self) -> list:

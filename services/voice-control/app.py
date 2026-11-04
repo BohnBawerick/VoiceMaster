@@ -1444,7 +1444,7 @@ def create_app() -> FastAPI:
             return _json_error(422, ["prompt: required — the short line to expand"])
         text, err = await mission_author.expand_mission(
             prompt, gateway_url=gateway_url,
-            token=hermes_gateway.gateway_token(),
+            token=hermes_gateway.gateway_token_for_profile(profile),
             timeout_s=mission_author.timeout_from_env(),
             transport=state.transport)
         if text is None:
@@ -1474,7 +1474,7 @@ def create_app() -> FastAPI:
         content_type = getattr(upload, "content_type", None) or "audio/webm"
         text, err = await mission_author.dictate_mission(
             audio, gateway_url=gateway_url,
-            token=hermes_gateway.gateway_token(),
+            token=hermes_gateway.gateway_token_for_profile(profile),
             timeout_s=mission_author.timeout_from_env(),
             content_type=content_type, filename=filename,
             transport=state.transport)

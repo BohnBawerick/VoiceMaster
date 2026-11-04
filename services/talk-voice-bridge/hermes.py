@@ -34,6 +34,14 @@ def gateway_url_for_profile(profile: str, default_url: str) -> "str | None":
     return hermes_gateway.gateway_url_for_profile(profile, default_url=default_url)
 
 
+def gateway_token_for_profile(profile: str, default_token: str) -> str:
+    """The bearer for that profile's gateway: its own entry in
+    HERMES_PROFILE_GATEWAY_TOKENS, else ``default_token`` (the shared
+    HERMES_GATEWAY_TOKEN). Outbound only; the bearer this bridge requires of its own
+    callers stays the shared one."""
+    return hermes_gateway.gateway_token_for_profile(profile, default_token=default_token)
+
+
 def hermes_profile_name(profile) -> str:
     """The ``hermes_profile`` of a call profile (an ActiveProfile or None), default
     'default' — for profile-less calls AND profiles that omit the field."""

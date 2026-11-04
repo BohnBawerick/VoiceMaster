@@ -38,6 +38,7 @@ DEFAULT_TIMEOUT_S = 30.0
 ENV_GATEWAY_URL = "HERMES_GATEWAY_URL"
 ENV_GATEWAY_TOKEN = "HERMES_GATEWAY_TOKEN"
 ENV_PROFILE_GATEWAY_URLS = "HERMES_PROFILE_GATEWAY_URLS"
+ENV_PROFILE_GATEWAY_TOKENS = "HERMES_PROFILE_GATEWAY_TOKENS"
 
 # hermes_profile_registry.REGISTRY_BASENAME (hermes/supervisor/), resolved under
 # VOICE_CONFIG_DIR: the writer's directory is mounted into every voice service
@@ -77,18 +78,35 @@ def check_tool_choice(value) -> str:
     return value
 
 
+def _name_value_map(raw: str) -> dict:
+    """``name=value,name=value`` -> dict. Splits each pair on its FIRST ``=``, so a
+    value may itself contain ``=`` (base64 padding in a token)."""
+    out = {}
+    for pair in (raw or "").split(","):
+        name, _, value = pair.strip().partition("=")
+        if name.strip() and value.strip():
+            out[name.strip()] = value.strip()
+    return out
+
+
 def profile_gateway_map(env=None) -> dict:
     """``name -> base URL`` from ``HERMES_PROFILE_GATEWAY_URLS``.
 
     Format: ``scout=http://localhost:18790,other=http://host:port``.
     """
     env = os.environ if env is None else env
-    out = {}
-    for pair in (env.get(ENV_PROFILE_GATEWAY_URLS) or "").split(","):
-        name, _, url = pair.strip().partition("=")
-        if name.strip() and url.strip():
-            out[name.strip()] = url.strip().rstrip("/")
-    return out
+    return {name: url.rstrip("/")
+            for name, url in _name_value_map(env.get(ENV_PROFILE_GATEWAY_URLS)).items()}
+
+
+def profile_token_map(env=None) -> dict:
+    """``name -> bearer`` from ``HERMES_PROFILE_GATEWAY_TOKENS``.
+
+    Format: ``scout=<token>,other=<token>``. For a profile whose gateway runs with its
+    own ``API_SERVER_KEY`` instead of the shared one.
+    """
+    env = os.environ if env is None else env
+    return _name_value_map(env.get(ENV_PROFILE_GATEWAY_TOKENS))
 
 
 def registry_path(config_dir=None, env=None) -> Path:
@@ -159,6 +177,28 @@ def hermes_profile_of(doc) -> str:
 def gateway_token(env=None) -> str:
     env = os.environ if env is None else env
     return (env.get(ENV_GATEWAY_TOKEN) or "").strip()
+
+
+def gateway_token_for_profile(profile: str, env=None, *,
+                              default_token: "str | None" = None) -> str:
+    """The bearer to send to a hermes_profile's gateway.
+
+    That profile's entry in ``HERMES_PROFILE_GATEWAY_TOKENS`` when there is one, else
+    the shared token: ``default_token`` when the caller holds one, else
+    ``HERMES_GATEWAY_TOKEN``. With no map set this is exactly the shared token, so an
+    install that runs one key for every profile sees no change.
+
+    This is the OUTBOUND bearer only - what VoiceMaster presents to Hermes. The bearer
+    VoiceMaster's own dialing endpoints require (``bearer_problem``) stays the shared
+    ``HERMES_GATEWAY_TOKEN``.
+    """
+    env = os.environ if env is None else env
+    name = (profile or "").strip() or "default"
+    own = profile_token_map(env).get(name)
+    if own:
+        return own
+    shared = default_token if default_token is not None else gateway_token(env)
+    return (shared or "").strip()
 
 
 def bearer_problem(authorization: str, token: str) -> "tuple[int, str] | None":

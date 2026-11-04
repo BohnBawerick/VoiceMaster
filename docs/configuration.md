@@ -16,6 +16,14 @@ profile, and each profile runs its own gateway.
   `default`, then `gateways/gateways.json` under `VOICE_CONFIG_DIR`, which the profile
   supervisor in `hermes/` writes. Only an entry with `status: ok` routes; a profile that does not
   resolve is refused, never sent to the default profile.
+- Every request to a profile's gateway carries the shared `HERMES_GATEWAY_TOKEN`, unless that
+  profile has its own entry in `HERMES_PROFILE_GATEWAY_TOKENS` (`name=token,name=token`,
+  `voicecore/hermes_gateway.py`, `gateway_token_for_profile`). Use it when a profile's gateway
+  runs with its own `API_SERVER_KEY`. Set it on all three services: the bridges send it on a
+  call (the in-call tool, the direct lane, the summary) and the dashboard sends it when it asks
+  an Agent to write a Mission. A token entry does not make a profile routable; the profile still
+  has to resolve as above. The bearer the bridges require before they dial stays the shared
+  `HERMES_GATEWAY_TOKEN`, whatever this map holds. Unset, every profile gets the shared token.
 - With the supervisor running, creating an Agent on the dashboard creates the profile directory,
   the supervisor starts its gateway within a scan interval, and the Agent is callable. No restart.
   Point the supervisor's `HERMES_GATEWAY_REGISTRY` at `data/voice-config/gateways/gateways.json`.
