@@ -183,10 +183,10 @@ class RealtimeBridge:
         `unavailable` - it never silently borrows another Agent's backend.
         """
         profile = None if self._effective_profile is profiles.UNSET else self._effective_profile
+        name = hermes.hermes_profile_name(profile)
         return call_summary.make_summariser(
-            gateway_url=hermes.gateway_url_for_profile(
-                hermes.hermes_profile_name(profile), self._cfg.hermes_gateway_url),
-            token=self._cfg.hermes_gateway_token)
+            gateway_url=hermes.gateway_url_for_profile(name, self._cfg.hermes_gateway_url),
+            token=hermes.gateway_token_for_profile(name, self._cfg.hermes_gateway_token))
 
     # -- public entrypoints --------------------------------------------------
 
@@ -602,7 +602,9 @@ class RealtimeBridge:
         started = time.monotonic()
         res_task = asyncio.create_task(hermes.call_hermes_agent(
             instruction, gateway_url=gateway_url,
-            token=self._cfg.hermes_gateway_token, timeout=self._cfg.hermes_timeout))
+            token=hermes.gateway_token_for_profile(
+                hermes.hermes_profile_name(_prof), self._cfg.hermes_gateway_token),
+            timeout=self._cfg.hermes_timeout))
         filler_fired = False
         try:
             done, _ = await asyncio.wait({res_task}, timeout=self._cfg.filler_debounce_ms / 1000.0)
